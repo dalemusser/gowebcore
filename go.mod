@@ -5,6 +5,7 @@ go 1.24.1
 require (
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-chi/cors v1.2.1
+	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/prometheus/client_golang v1.22.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.17.0
