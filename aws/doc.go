@@ -1,3 +1,0 @@
-package aws
-
-// TODO: implementation
