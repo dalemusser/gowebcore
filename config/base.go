@@ -11,4 +11,6 @@ type Base struct {
 	EnableTLS   bool     `mapstructure:"enable_tls"`
 	LogLevel    string   `mapstructure:"log_level"` // debug|info|warn|error
 	CORSOrigins []string `mapstructure:"cors_origins"`
+	CertFile    string   `mapstructure:"cert_file"` // fullchain.pem
+	KeyFile     string   `mapstructure:"key_file"`  // privkey.pem
 }
