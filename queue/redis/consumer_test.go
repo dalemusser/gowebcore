@@ -2,22 +2,30 @@ package redis
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
-	"github.com/alicebob/miniredis/v2"
 	"github.com/dalemusser/gowebcore/queue"
 	"github.com/dalemusser/gowebcore/tasks"
 )
 
 func TestPublishAndConsume(t *testing.T) {
-	mr, _ := miniredis.Run()
-	defer mr.Close()
+	redisURL := os.Getenv("REDIS_URL") // e.g. redis://localhost:6379/0
+	if redisURL == "" {
+		t.Skip("set REDIS_URL to run Redis Streams integration test")
+	}
 
-	rdb, _ := New("redis://" + mr.Addr())
+	rdb, err := New(redisURL)
+	if err != nil {
+		t.Fatalf("redis connect: %v", err)
+	}
+	defer rdb.Close()
+
+	// clean slate
+	_ = rdb.FlushDB(context.Background()).Err()
+
 	prod := NewProducer(rdb)
-
-	// publish one job
 	_ = prod.Publish(context.Background(), "demo", []byte("hello"))
 
 	done := make(chan struct{})
@@ -30,7 +38,7 @@ func TestPublishAndConsume(t *testing.T) {
 	}
 
 	mgr := tasks.New()
-	NewConsumer(rdb, "demo", "g1", handler).Start(mgr)
+	NewConsumer(rdb, "demo", "workers", handler).Start(mgr)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -39,7 +47,7 @@ func TestPublishAndConsume(t *testing.T) {
 	select {
 	case <-done:
 	case <-time.After(2 * time.Second):
-		t.Fatal("message not consumed")
+		t.Fatal("message not consumed (ensure Redis is reachable at REDIS_URL)")
 	}
 	cancel()
 	mgr.Wait()
