@@ -1,15 +1,25 @@
 {{ define "title" }}Home{{ end }}
-{{ define "content" }}
-<div class="prose mx-auto p-6">
-  <h1>Hello, gowebcore!</h1>
-  <p>This is rendered with the base layout.</p>
-  <button
-    hx-get="/fragment"
-    hx-target="#frag"
-    class="px-3 py-1 bg-blue-600 text-white rounded">
-    Load fragment
-  </button>
-  <div id="frag" class="mt-4"></div>
-</div>
+
+{{ define "head" }}
+  <!-- Pipeline-built assets -->
+  <link rel="stylesheet" href="{{ .CSS }}">
+  <script src="{{ .JS }}" defer></script>
 {{ end }}
+
+{{ define "content" }}
+  <div class="prose mx-auto p-6">
+    <h1>Hello, gowebcore!</h1>
+    <p>This page is using the static-asset pipeline.</p>
+
+    <button
+      hx-get="/fragment"
+      hx-target="#frag"
+      class="px-3 py-1 bg-blue-600 text-white rounded">
+      Load fragment
+    </button>
+
+    <div id="frag" class="mt-4"></div>
+  </div>
+{{ end }}
+
 {{ template "base" . }}
