@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/dalemusser/gowebcore/asset"
 	"github.com/dalemusser/gowebcore/config"
 	"github.com/dalemusser/gowebcore/logger"
 	"github.com/dalemusser/gowebcore/render"
@@ -20,14 +21,14 @@ func main() {
 	logger.Init(c.LogLevel)
 
 	r := chi.NewRouter()
+	r.Mount("/assets", asset.Handler())
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		render.Render(w, r, "home.html", nil)
-	})
-	r.Get("/fragment", func(w http.ResponseWriter, r *http.Request) {
-		render.Render(w, r, "fragment.html", map[string]any{
-			"Now": "right now",
-		})
+		data := map[string]any{
+			"CSS": asset.Path("app.css"),
+			"JS":  asset.Path("alpine.js"),
+		}
+		render.Render(w, r, "home.html", data)
 	})
 
 	srv := server.New(c.Base, r)
