@@ -167,5 +167,47 @@ Roadmap
 - Deployment recipes: Dockerfile + Kubernetes manifests
 - Docs site with copy-paste snippets
 
+____
+
+## How static files are served in gowebcore
+
+gowebcore itself does not auto-register any static route.
+
+It ships the asset package:
+
+```golang
+import "github.com/dalemusser/gowebcore/asset"
+
+// asset.Handler()  →  http.Handler that serves /assets/* from the embedded FS
+// asset.Path("app.css") → "/assets/app.f3c9e2.css"
+```
+
+Your service decides if / where to mount it.
+
+Typical usage (as shown in the example app):
+
+```golang
+r := chi.NewRouter()
+r.Mount("/assets", asset.Handler())    // <─ add the static route
+
+r.Get("/", pageHandler)
+```
+
+Want additional static folders (e.g., docs, user uploads)?
+
+You add them explicitly:
+
+```golang
+r.Handle("/docs/*", http.StripPrefix("/docs/", http.FileServer(http.Dir("./docs"))))
+```
+
+Why it’s done this way
+
+- Keeps the core opinion-free about URL layout.
+- Services that don’t need embedded assets (pure JSON APIs, queue workers) don’t pay any cost.
+- You remain free to host large binaries or user uploads on S3/CloudFront instead of inside the Go binary.
+
+So: no automatic static route—you mount asset.Handler() (or any other file server) exactly where you want it.
+
 © 2025 Dale Musser & contributors. MIT License.
 
