@@ -80,6 +80,51 @@ Run it:
 go run ./cmd/server --config=config.toml
 ```
 
+## Example — minimal service that just uses DefaultCORS()
+
+If you’re prototyping or building a fully public API, you can keep the
+wide-open wildcard behavior:
+
+```golang
+package main
+
+import (
+	"context"
+	"net/http"
+
+	"github.com/dalemusser/gowebcore/config"
+	"github.com/dalemusser/gowebcore/logger"
+	"github.com/dalemusser/gowebcore/middleware"
+	"github.com/dalemusser/gowebcore/server"
+	"github.com/go-chi/chi/v5"
+)
+
+type cfg struct{ config.Base }
+
+func main() {
+	var c cfg
+	_ = config.Load(&c)      // flags / env / file
+
+	logger.Init(c.LogLevel)
+
+	r := chi.NewRouter()
+	r.Use(middleware.DefaultCORS())   // ← allows every Origin "*"
+
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("public API\n"))
+	})
+
+	srv := server.New(c.Base, r)
+	_ = server.Serve(context.Background(), srv, "", "") // HTTP by default
+}
+```
+
+DefaultCORS() sets AllowedOrigins to *, plus standard methods and
+headers.
+
+- Ideal for internal services, mock APIs, or auth-protected endpoints where origin restrictions aren’t necessary.
+- For production front-ends you’ll usually switch to middleware.CORSFromConfig(cfg.Base) so you can whitelist specific domains.
+
 ## Background jobs & Redis queue
 
 ```golang
