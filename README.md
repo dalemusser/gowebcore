@@ -1,0 +1,126 @@
+# gowebcore
+
+**Reusable Go web-server toolkit** – drop-in building blocks that let you stand up a production-ready service in minutes, not days.
+
+| Layer | What you get |
+|-------|--------------|
+| **config** | Flag + file + env loader (`viper`), merged into a single struct. |
+| **logger** | Structured `slog` JSON with file:line and automatic OpenTelemetry trace/span IDs. |
+| **server** | Chi router, gzip, request-ID, graceful shutdown, and HTTPS via **static PEM _or_ Let’s Encrypt**. |
+| **middleware** | CORS (config-driven), CSRF cookie, Prometheus request histogram, `/metrics` route. |
+| **render** | Embedded HTML templates + HTMX fragment detection. |
+| **asset** | Fingerprinted `/assets/*` with immutable caching, `asset.Path("app.css")` helper. |
+| **auth** | JWT (HS256 & RS256) + API-key middleware. |
+| **db** | Multi-alias Mongo/DocumentDB manager + generic helpers. |
+| **tasks** | Background job runner with graceful stop & Prometheus gauge. |
+| **queue** | Redis Streams producer/consumer adapter (SQS & NATS coming). |
+| **aws** | S3 presign (PUT/GET) and CloudFront invalidation. |
+
+---
+
+## Quick start
+
+```bash
+# create a new service
+go mod init github.com/me/myservice
+go get github.com/dalemusser/gowebcore@latest
+```
+
+```golang
+// cmd/server/main.go
+package main
+
+import (
+	"context"
+
+	"github.com/dalemusser/gowebcore/config"
+	"github.com/dalemusser/gowebcore/logger"
+	"github.com/dalemusser/gowebcore/middleware"
+	"github.com/dalemusser/gowebcore/server"
+	"github.com/go-chi/chi/v5"
+)
+
+type cfg struct{ config.Base }
+
+func main() {
+	var c cfg
+	_ = config.Load(&c, config.WithEnvPrefix("APP"))
+
+	logger.Init(c.LogLevel)
+
+	r := chi.NewRouter()
+	r.Use(middleware.CORSFromConfig(c.Base))
+
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Hello, gowebcore!"))
+	})
+
+	srv := server.New(c.Base, r)
+	_ = server.Serve(context.Background(), srv, c.CertFile, c.KeyFile)
+}
+```
+
+```toml
+# config.toml
+app_name   = "demo"
+env        = "dev"
+http_port  = 8080
+domain     = "demo.local"
+enable_tls = false           # autocert if true & domain set
+log_level  = "info"
+
+cors_origins = [
+  "http://localhost:5173"
+]
+```
+
+Run it:
+
+```bash
+go run ./cmd/server --config=config.toml
+```
+
+## Background jobs & Redis queue
+
+```golang
+import (
+	"github.com/dalemusser/gowebcore/queue/redis"
+	"github.com/dalemusser/gowebcore/tasks"
+)
+
+rdb, _ := redis.New("redis://localhost:6379")
+producer := redis.NewProducer(rdb)
+_ = producer.Publish(ctx, "email", []byte(`{"to":"alice","subj":"hi"}`))
+
+mgr := tasks.New()
+redis.NewConsumer(rdb, "email", "workers", emailHandler).Start(mgr)
+mgr.Start(ctx)
+```
+
+## Metrics & tracing
+
+```golang
+middleware.RegisterDefaultPrometheus()
+
+shutdown, _ := observability.Init(ctx, observability.Config{
+	ServiceName: "demo",
+	Endpoint:    "localhost:4318",  // OTLP/HTTP collector
+	SampleRatio: 0.25,
+})
+defer shutdown(ctx)
+```
+
+/metrics exposes Go runtime stats and HTTP request histograms.
+
+Every log line includes trace_id & span_id when a span is active.
+
+⸻
+
+Roadmap
+- SQS & NATS adapters under queue/
+- CLI toolkit (serve, migrate, --version) via cobra
+- Deployment recipes: Dockerfile + Kubernetes manifests
+- Docs site with copy-paste snippets
+
+© 2025 Dale Musser & contributors. MIT License.
+
