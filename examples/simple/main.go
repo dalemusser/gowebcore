@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"net/http"
+	"log"
+	"time"
 
-	"github.com/dalemusser/gowebcore/asset"
 	"github.com/dalemusser/gowebcore/config"
 	"github.com/dalemusser/gowebcore/logger"
-	"github.com/dalemusser/gowebcore/render"
+	"github.com/dalemusser/gowebcore/tasks"
 	"github.com/dalemusser/gowebcore/server"
 
 	"github.com/go-chi/chi/v5"
@@ -17,20 +17,39 @@ type cfg struct{ config.Base }
 
 func main() {
 	var c cfg
-	_ = config.Load(&c, config.WithEnvPrefix("EX"))
+	_ = config.Load(&c)
 	logger.Init(c.LogLevel)
 
+	// --- set up tasks --------------------
+	mgr := tasks.New()
+	mgr.Add(tasks.Wrap("ticker", tickerTask))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	mgr.Start(ctx)
+
+	// --- http server ---------------------
 	r := chi.NewRouter()
-	r.Mount("/assets", asset.Handler())
-
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		data := map[string]any{
-			"CSS": asset.Path("app.css"),
-			"JS":  asset.Path("alpine.js"),
-		}
-		render.Render(w, r, "home.html", data)
-	})
-
 	srv := server.New(c.Base, r)
-	_ = server.Graceful(context.Background(), srv)
+
+	go func() {
+		if err := server.Graceful(ctx, srv); err != nil {
+			log.Println(err)
+		}
+		cancel()      // stop tasks when server exits
+	}()
+
+	mgr.Wait()      // block until tasks finish
+}
+
+func tickerTask(ctx context.Context) error {
+	t := time.NewTicker(10 * time.Second)
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-t.C:
+			logger.Instance().Info("tick")
+		}
+	}
 }
