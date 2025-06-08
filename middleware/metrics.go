@@ -40,3 +40,10 @@ func Metrics(next http.Handler) http.Handler {
 		).Observe(duration)
 	})
 }
+
+// RegisterDefaultPrometheus registers Go GC & process collectors.
+// Call once in main().
+func RegisterDefaultPrometheus() {
+	prometheus.MustRegister(prometheus.NewGoCollector())
+	prometheus.MustRegister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
+}
