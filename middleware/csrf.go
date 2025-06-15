@@ -1,37 +1,38 @@
 package middleware
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"net/http"
+
+	"github.com/justinas/nosurf"
 )
 
-const csrfCookie = "csrf_token"
+// CSRF wraps the provided handler with nosurf CSRF protection.
+//   - A cookie named "csrf_token" is set (SameSite=Lax, Secure when TLS).
+//   - For state-changing requests (POST/PUT/PATCH/DELETE) the token must be
+//     supplied in a header "X-CSRF-Token" or form field "csrf_token".
+//   - Call nosurf.Token(r) in templates to embed the token.
+//
+// Example:
+//
+//	r := chi.NewRouter()
+//	r.Use(middleware.CSRF)               // global
+//	r.Get("/form", showForm)
+//	r.Post("/submit", handleSubmit)
+func CSRF(next http.Handler) http.Handler {
+	csrf := nosurf.New(next)
 
-func CSRFCookie(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, err := r.Cookie(csrfCookie)
-		if err != nil || token.Value == "" {
-			b := make([]byte, 32)
-			_, _ = rand.Read(b)
-			val := base64.RawURLEncoding.EncodeToString(b)
-			http.SetCookie(w, &http.Cookie{
-				Name:  csrfCookie,
-				Value: val,
-				Path:  "/",
-			})
-			r.AddCookie(&http.Cookie{Name: csrfCookie, Value: val})
-		}
-		next.ServeHTTP(w, r)
+	// Cookie settings
+	csrf.SetBaseCookie(http.Cookie{
+		HttpOnly: true,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+		Secure:   true, // automatically downgraded by nosurf on non-TLS
 	})
+
+	return csrf
 }
 
-// ValidateCSRF checks that header "X-CSRF-Token" equals the cookie.
-// Call in your POST/PUT/PATCH handlers.
-func ValidateCSRF(r *http.Request) bool {
-	c, err := r.Cookie(csrfCookie)
-	if err != nil {
-		return false
-	}
-	return r.Header.Get("X-CSRF-Token") == c.Value
+// Token returns the request's CSRF token (helper for templates).
+func Token(r *http.Request) string {
+	return nosurf.Token(r)
 }
