@@ -1,3 +1,4 @@
+// cmd/root.go
 package cmd
 
 import (
@@ -6,25 +7,67 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// -----------------------------------------------------------------------------
+// Configuration model
+// -----------------------------------------------------------------------------
+
+// appConfig embeds gowebcore's Base and adds service-specific blocks.
+type appConfig struct {
+	config.Base
+
+	Redis struct {
+		URL string `mapstructure:"url"`
+	} `mapstructure:"redis"`
+
+	Postgres struct {
+		DSN string `mapstructure:"dsn"`
+	} `mapstructure:"postgres"`
+}
+
+// -----------------------------------------------------------------------------
+// Globals
+// -----------------------------------------------------------------------------
+
 var (
-	cfgFile string
+	cfgFile string    // --config flag
+	Cfg     appConfig // populated in PersistentPreRunE
+
 	rootCmd = &cobra.Command{
 		Use:   "gowebsvc",
-		Short: "gowebcore service runner",
+		Short: "gowebcore service runner (serve | migrate | worker | version)",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// 1. load config (env + file + flags)
 			if err := config.Load(&Cfg, config.WithConfigFile(cfgFile)); err != nil {
 				return err
 			}
+			// 2. initialise structured logger
 			logger.Init(Cfg.LogLevel)
 			return nil
 		},
 	}
-	Cfg config.Base
 )
 
+// -----------------------------------------------------------------------------
+// Public entrypoint
+// -----------------------------------------------------------------------------
+
+// Execute is called by service/main.go.
 func Execute() { _ = rootCmd.Execute() }
 
+// -----------------------------------------------------------------------------
+// CLI initialisation
+// -----------------------------------------------------------------------------
+
 func init() {
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file")
-	rootCmd.AddCommand(serveCmd, migrateCmd, workerCmd, versionCmd)
+	// persistent flags available to *all* sub-commands
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "",
+		"path to TOML/YAML/JSON config file")
+
+	// register sub-commands (defined in their own files)
+	rootCmd.AddCommand(
+		serveCmd,
+		migrateCmd,
+		workerCmd,
+		versionCmd,
+	)
 }
