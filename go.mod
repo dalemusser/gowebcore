@@ -15,8 +15,10 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/nats-io/nats.go v1.42.0
+	github.com/pressly/goose/v3 v3.24.3
 	github.com/prometheus/client_golang v1.19.0
 	github.com/redis/go-redis/v9 v9.10.0
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.16.0
@@ -69,7 +71,6 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
-	github.com/pressly/goose/v3 v3.24.3 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.54.0 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect

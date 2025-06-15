@@ -209,5 +209,25 @@ Why it’s done this way
 
 So: no automatic static route—you mount asset.Handler() (or any other file server) exactly where you want it.
 
+
+## CLI worker
+
+### Background worker
+
+```bash
+myservice worker --config=prod.toml
+```
+
+Auto-registers queue consumers (Redis Streams, SQS, NATS) if configured.
+
+Supports cron tasks via tasks.Cron:
+
+```golang
+mgr.Cron("0 */5 * * *", func(ctx context.Context) error {
+    return db.Exec(ctx, "DELETE FROM sessions WHERE expires < NOW()")
+})
+```
+
+
 © 2025 Dale Musser & contributors. MIT License.
 
