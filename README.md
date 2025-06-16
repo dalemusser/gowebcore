@@ -26,7 +26,7 @@ go mod init github.com/me/myservice
 go get github.com/dalemusser/gowebcore@latest
 ```
 
-```golang
+```go
 // cmd/server/main.go
 package main
 
@@ -85,7 +85,7 @@ go run ./cmd/server --config=config.toml
 If you’re prototyping or building a fully public API, you can keep the
 wide-open wildcard behavior:
 
-```golang
+```go
 package main
 
 import (
@@ -127,7 +127,7 @@ headers.
 
 ## Background jobs & Redis queue
 
-```golang
+```go
 import (
 	"github.com/dalemusser/gowebcore/queue/redis"
 	"github.com/dalemusser/gowebcore/tasks"
@@ -144,7 +144,7 @@ mgr.Start(ctx)
 
 ## Metrics & tracing
 
-```golang
+```go
 middleware.RegisterDefaultPrometheus()
 
 shutdown, _ := observability.Init(ctx, observability.Config{
@@ -175,7 +175,7 @@ gowebcore itself does not auto-register any static route.
 
 It ships the asset package:
 
-```golang
+```go
 import "github.com/dalemusser/gowebcore/asset"
 
 // asset.Handler()  →  http.Handler that serves /assets/* from the embedded FS
@@ -186,7 +186,7 @@ Your service decides if / where to mount it.
 
 Typical usage (as shown in the example app):
 
-```golang
+```go
 r := chi.NewRouter()
 r.Mount("/assets", asset.Handler())    // <─ add the static route
 
@@ -197,7 +197,7 @@ Want additional static folders (e.g., docs, user uploads)?
 
 You add them explicitly:
 
-```golang
+```go
 r.Handle("/docs/*", http.StripPrefix("/docs/", http.FileServer(http.Dir("./docs"))))
 ```
 
@@ -226,6 +226,23 @@ Supports cron tasks via tasks.Cron:
 mgr.Cron("0 */5 * * *", func(ctx context.Context) error {
     return db.Exec(ctx, "DELETE FROM sessions WHERE expires < NOW()")
 })
+```
+
+## Clever Authentication
+
+```
+#### Clever
+
+```toml
+[clever]
+client_id     = "YOUR_ID"
+client_secret = "YOUR_SECRET"
+redirect      = "https://svc.example.com/auth/callback"
+```
+
+```go
+provider := oauth.NewClever(cfg.Clever.ClientID, cfg.Clever.ClientSecret, cfg.Clever.Redirect)
+middleware.Routes(r, provider, session)
 ```
 
 
