@@ -11,23 +11,30 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+func mustEnv(k string) string {
+	v := os.Getenv(k)
+	if v == "" {
+		log.Fatalf("%s not set", k)
+	}
+	return v
+}
+
 func main() {
 	provider := oauth.NewGoogle(
-		os.Getenv("GOOGLE_CLIENT_ID"),
-		os.Getenv("GOOGLE_CLIENT_SECRET"),
+		mustEnv("GOOGLE_CLIENT_ID"),
+		mustEnv("GOOGLE_CLIENT_SECRET"),
 		"http://localhost:8080/auth/callback",
 	)
 
-	// 64-byte hash key (replace in prod!)
-	hashKey := []byte("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEF")
+	// session key from env
+	hashKey := []byte(mustEnv("SESSION_HASH_KEY"))
 	sess := auth.NewSession(hashKey, nil)
 
 	r := chi.NewRouter()
-	middleware.Routes(r, provider, sess) // /auth/login|callback|logout
+	middleware.Routes(r, provider, sess)
 
 	r.With(middleware.RequireAuth(sess)).Get("/", func(w http.ResponseWriter, r *http.Request) {
 		user := middleware.User(r)
-		w.Header().Set("Content-Type", "text/plain")
 		w.Write([]byte("Hi, " + user["email"].(string) + "\n"))
 	})
 
