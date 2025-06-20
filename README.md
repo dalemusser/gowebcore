@@ -1,6 +1,6 @@
 # gowebcore
 
-**Reusable Go web-server toolkit** – drop-in building blocks that let you stand up a production-ready service in minutes, not days.
+Reusable Go web-server toolkit: config, logging, HTTP server, middleware, database helpers, background tasks, and authentication adapters.
 
 | Layer | What you get |
 |-------|--------------|
@@ -228,6 +228,33 @@ mgr.Cron("0 */5 * * *", func(ctx context.Context) error {
 })
 ```
 
+## Supported authentication options
+
+| Auth method            | Protocol / Library                                   | Example path\*           | Required env vars†                                                    | Uses `SESSION_HASH_KEY`? |
+|------------------------|------------------------------------------------------|--------------------------|-----------------------------------------------------------------------|--------------------------|
+| **ClassLink (SAML)**   | SAML 2.0 — `crewjam/saml/samlsp`                     | `examples/classlink_saml` | `CL_SUBDOMAIN`                                                        | ❌ |
+| **ClassLink (OIDC)**   | OpenID Connect — `coreos/go-oidc`                    | `examples/classlink_oidc` | `CL_SUBDOMAIN`, `CL_OIDC_CLIENT_ID`, `CL_OIDC_CLIENT_SECRET`          | ✅ |
+| **Clever**             | OAuth 2.0 — Clever REST                              | `examples/clever`        | `CLEVER_CLIENT_ID`, `CLEVER_CLIENT_SECRET`, `SESSION_HASH_KEY`        | ✅ |
+| **Google Login**       | OpenID Connect — `golang.org/x/oauth2` (Google)      | `examples/google_login`  | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SESSION_HASH_KEY`        | ✅ |
+| **GitHub OAuth**       | OAuth 2.0 — `golang.org/x/oauth2` (GitHub)           | `examples/github_oauth`  | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `SESSION_HASH_KEY`        | ✅ |
+
+\* *Example paths refer to runnable programs in the `examples/` directory.*  
+† Rows marked **✅** require the secure session hash key below.
+
+---
+
+### Generating a secure session hash key
+
+`auth.Session` signs its cookie with a 64-byte key (optionally encrypting with
+a 32-byte block key). Generate once and load it from your secret store:
+
+```bash
+# generate
+openssl rand -hex 64 > HASH_KEY
+
+# load for local dev
+export SESSION_HASH_KEY=$(cat HASH_KEY)
+
 ## Clever Authentication
 
 ```
@@ -269,55 +296,6 @@ certificate when keyFile / certFile are nil. For production supply real
 key/cert files or use Let’s Encrypt and set SAML_KEY_FILE,
 SAML_CERT_FILE.
 
-
-## Generating a secure session hash key (used by Clever & OIDC)
-
-```bash
-openssl rand -hex 64 > HASH_KEY      # 64-byte hex string
-export SESSION_HASH_KEY=$(cat HASH_KEY)
-```
-
-In production, read SESSION_HASH_KEY (and an optional
-SESSION_BLOCK_KEY for AES encryption) from your secret manager and pass
-them to auth.NewSession.
-
-## Supported ClassLink and Clever authentication options
-
-| Auth method | Protocol / Library | Example path | Required env vars | Uses `SESSION_HASH_KEY`? |
-|-------------|-------------------|--------------|-------------------|--------------------------|
-| **ClassLink (SAML)** | SAML 2.0 – `crewjam/saml/samlsp` | `examples/classlink_saml` | `CL_SUBDOMAIN` | ❌ |
-| **ClassLink (OIDC)** | OpenID Connect – `coreos/go-oidc` | `examples/classlink_oidc` | `CL_SUBDOMAIN`  `CL_OIDC_CLIENT_ID`  `CL_OIDC_CLIENT_SECRET` | ✅ |
-| **Clever** | OAuth 2.0 – Clever REST | `examples/clever` | `CLEVER_CLIENT_ID`  `CLEVER_CLIENT_SECRET` | ✅ |
-
-#### Legend
-
-- CL_SUBDOMAIN Tenant sub-domain, e.g. mydistrict.
-- SESSION_HASH_KEY 64-byte hex string that signs the session cookie (only needed for the rows marked ✅).
-- "Uses SESSION_HASH_KEY?" column clarifies which flows rely on auth.Session.
-
-
-## Supported authentication options
-
-| Auth method            | Protocol / Library                                   | Example path\*           | Required env vars†                                                    | Uses `SESSION_HASH_KEY`? |
-|------------------------|------------------------------------------------------|--------------------------|-----------------------------------------------------------------------|--------------------------|
-| **ClassLink (SAML)**   | SAML 2.0 — `crewjam/saml/samlsp`                     | `examples/classlink_saml` | `CL_SUBDOMAIN`                                                        | ❌ |
-| **ClassLink (OIDC)**   | OpenID Connect — `coreos/go-oidc`                    | `examples/classlink_oidc` | `CL_SUBDOMAIN`, `CL_OIDC_CLIENT_ID`, `CL_OIDC_CLIENT_SECRET`          | ✅ |
-| **Clever**             | OAuth 2.0 — Clever REST                              | `examples/clever`        | `CLEVER_CLIENT_ID`, `CLEVER_CLIENT_SECRET`                            | ✅ |
-| **Google Login**       | OpenID Connect — `golang.org/x/oauth2` (Google)      | `examples/google_login`  | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`                            | ✅ |
-| **GitHub OAuth**       | OAuth 2.0 — `golang.org/x/oauth2` (GitHub)           | `examples/github_oauth`  | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`                            | ✅ |
-
-\* *Example paths refer to runnable demo programs in the `examples/` directory.*
-
-† For rows marked **✅**, also set a 64-byte `SESSION_HASH_KEY`
-(and optionally `SESSION_BLOCK_KEY`) used by `auth.Session`:
-
-```bash
-openssl rand -hex 64 > HASH_KEY
-export SESSION_HASH_KEY=$(cat HASH_KEY)
-```
-
-For production, always serve over HTTPS and store secrets (*_CLIENT_SECRET,
-SESSION_HASH_KEY, etc.) in a secure secret-manager, not plain env files.
 
 
 © 2025 Dale Musser & contributors. MIT License.
