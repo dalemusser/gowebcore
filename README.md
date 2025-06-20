@@ -319,6 +319,9 @@ openssl rand -hex 64 > HASH_KEY
 export SESSION_HASH_KEY=$(cat HASH_KEY)
 ```
 
+For production, always serve over HTTPS and store secrets (*_CLIENT_SECRET,
+SESSION_HASH_KEY, etc.) in a secure secret-manager, not plain env files.
+
 
 © 2025 Dale Musser & contributors. MIT License.
 
