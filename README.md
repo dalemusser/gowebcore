@@ -245,6 +245,19 @@ provider := oauth.NewClever(cfg.Clever.ClientID, cfg.Clever.ClientSecret, cfg.Cl
 middleware.Routes(r, provider, session)
 ```
 
+## ClassLink (OIDC) Authentication
+
+```bash
+export CL_SUBDOMAIN="mydistrict"
+export CL_OIDC_CLIENT_ID="..."
+export CL_OIDC_CLIENT_SECRET="..."
+go run ./examples/classlink_oidc
+```
+
+Open http://localhost:8080/ – you’ll be redirected to ClassLink’s OIDC login
+and back to the protected home page.
+
+
 
 © 2025 Dale Musser & contributors. MIT License.
 
