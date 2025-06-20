@@ -296,23 +296,20 @@ them to auth.NewSession.
 - "Uses SESSION_HASH_KEY?" column clarifies which flows rely on auth.Session.
 
 
-## All authentication options
+## Supported authentication options
 
-### Supported authentication options
+| Auth method            | Protocol / Library                                   | Example path\*           | Required env vars†                                                    | Uses `SESSION_HASH_KEY`? |
+|------------------------|------------------------------------------------------|--------------------------|-----------------------------------------------------------------------|--------------------------|
+| **ClassLink (SAML)**   | SAML 2.0 — `crewjam/saml/samlsp`                     | `examples/classlink_saml` | `CL_SUBDOMAIN`                                                        | ❌ |
+| **ClassLink (OIDC)**   | OpenID Connect — `coreos/go-oidc`                    | `examples/classlink_oidc` | `CL_SUBDOMAIN`, `CL_OIDC_CLIENT_ID`, `CL_OIDC_CLIENT_SECRET`          | ✅ |
+| **Clever**             | OAuth 2.0 — Clever REST                              | `examples/clever`        | `CLEVER_CLIENT_ID`, `CLEVER_CLIENT_SECRET`                            | ✅ |
+| **Google Login**       | OpenID Connect — `golang.org/x/oauth2` (Google)      | `examples/google_login`  | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`                            | ✅ |
+| **GitHub OAuth**       | OAuth 2.0 — `golang.org/x/oauth2` (GitHub)           | `examples/github_oauth`  | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`                            | ✅ |
 
-| Auth method            | Protocol / Library                             | Example path\*                   | Required env vars | Uses `SESSION_HASH_KEY`? |
-|------------------------|-----------------------------------------------|----------------------------------|-------------------|--------------------------|
-| **ClassLink (SAML)**   | SAML 2.0 — `crewjam/saml/samlsp`              | `examples/classlink_saml`        | `CL_SUBDOMAIN` | ❌ |
-| **ClassLink (OIDC)**   | OpenID Connect — `coreos/go-oidc`             | `examples/classlink_oidc`        | `CL_SUBDOMAIN`, `CL_OIDC_CLIENT_ID`, `CL_OIDC_CLIENT_SECRET` | ✅ |
-| **Clever**             | OAuth 2.0 — Clever REST                       | `examples/clever`                | `CLEVER_CLIENT_ID`, `CLEVER_CLIENT_SECRET` | ✅ |
-| **Google Login**       | OpenID Connect — `golang.org/x/oauth2` + Google endpoints | **_example coming soon_** | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | ✅ |
-| **GitHub OAuth**       | OAuth 2.0 — `golang.org/x/oauth2` + GitHub endpoints | **_example coming soon_** | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | ✅ |
+\* *Example paths refer to runnable demo programs in the `examples/` directory.*
 
-\* _Example paths refer to runnable demo programs under the `examples/`
-directory. "Coming soon" rows have the provider helper implemented but don’t
-yet have a runnable sample._
-
-Rows marked ✅ rely on auth.Session; generate a secure key:
+† For rows marked **✅**, also set a 64-byte `SESSION_HASH_KEY`
+(and optionally `SESSION_BLOCK_KEY`) used by `auth.Session`:
 
 ```bash
 openssl rand -hex 64 > HASH_KEY
