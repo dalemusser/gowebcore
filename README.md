@@ -17,6 +17,13 @@ Reusable Go web-server toolkit: config, logging, HTTP server, middleware, databa
 | **aws** | S3 presign (PUT/GET) and CloudFront invalidation. |
 
 ---
+## Local dev stack
+
+```bash
+docker compose up -d  # Redis, Postgres, NATS, Prometheus
+go run ./examples/clever
+```
+---
 
 ## Quick start
 
