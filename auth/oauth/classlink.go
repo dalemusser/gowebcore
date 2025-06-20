@@ -1,3 +1,4 @@
+// auth/oauth/classlink.go
 package oauth
 
 import (
@@ -8,25 +9,22 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type OIDCProvider struct {
-	Provider *oidc.Provider
-	Verifier *oidc.IDTokenVerifier
-	Config   *oauth2.Config
-}
+// NewClassLinkOIDC discovers the OIDC metadata for a ClassLink tenant
+// (sub-domain like “mydistrict”) and returns a gowebcore *Provider
+// that works with middleware.AuthRoutes / RequireAuth.
+func NewClassLinkOIDC(
+	ctx context.Context,
+	subdomain, clientID, clientSecret, redirect string,
+) (*Provider, error) {
 
-// NewClassLinkOIDC discovers OIDC endpoints from the tenant’s sub-domain
-// (e.g. “mydistrict”) and returns an OAuth provider compatible with the
-// existing middleware.
-func NewClassLinkOIDC(ctx context.Context, subdomain, clientID, clientSecret, redirect string) (*Provider, error) {
-	iss := fmt.Sprintf("https://%s.classlink.com", subdomain)
-	discovery := iss + "/.well-known/openid-configuration"
+	issuer := fmt.Sprintf("https://%s.classlink.com", subdomain)
+	wellKnown := issuer + "/.well-known/openid-configuration"
 
-	op, err := oidc.NewProvider(ctx, discovery)
+	op, err := oidc.NewProvider(ctx, wellKnown)
 	if err != nil {
 		return nil, err
 	}
 
-	// Configure OAuth2
 	cfg := &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
@@ -39,13 +37,12 @@ func NewClassLinkOIDC(ctx context.Context, subdomain, clientID, clientSecret, re
 
 	return &Provider{
 		Config: cfg,
-		UserInfo: func(c context.Context, tk *oauth2.Token) (map[string]any, error) {
-			// Parse & verify ID Token
-			rawIDToken, ok := tk.Extra("id_token").(string)
+		UserInfo: func(c context.Context, tok *oauth2.Token) (map[string]any, error) {
+			rawID, ok := tok.Extra("id_token").(string)
 			if !ok {
 				return nil, fmt.Errorf("no id_token in token response")
 			}
-			idTok, err := verifier.Verify(c, rawIDToken)
+			idTok, err := verifier.Verify(c, rawID)
 			if err != nil {
 				return nil, err
 			}
