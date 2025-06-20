@@ -257,7 +257,29 @@ go run ./examples/classlink_oidc
 Open http://localhost:8080/ – you’ll be redirected to ClassLink’s OIDC login
 and back to the protected home page.
 
+## ClassLink (SAML) Authentication
 
+```bash
+export CL_SUBDOMAIN="mydistrict"
+go run ./examples/classlink_saml
+```
+
+Note: The SAML example auto-generates an RSA key and self-signed
+certificate when keyFile / certFile are nil. For production supply real
+key/cert files or use Let’s Encrypt and set SAML_KEY_FILE,
+SAML_CERT_FILE.
+
+
+## Generating a secure session hash key (used by Clever & OIDC)
+
+```bash
+openssl rand -hex 64 > HASH_KEY      # 64-byte hex string
+export SESSION_HASH_KEY=$(cat HASH_KEY)
+```
+
+In production, read SESSION_HASH_KEY (and an optional
+SESSION_BLOCK_KEY for AES encryption) from your secret manager and pass
+them to auth.NewSession.
 
 © 2025 Dale Musser & contributors. MIT License.
 
