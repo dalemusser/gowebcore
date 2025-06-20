@@ -281,5 +281,44 @@ In production, read SESSION_HASH_KEY (and an optional
 SESSION_BLOCK_KEY for AES encryption) from your secret manager and pass
 them to auth.NewSession.
 
+## Supported ClassLink and Clever authentication options
+
+| Auth method | Protocol / Library | Example path | Required env vars | Uses `SESSION_HASH_KEY`? |
+|-------------|-------------------|--------------|-------------------|--------------------------|
+| **ClassLink (SAML)** | SAML 2.0 – `crewjam/saml/samlsp` | `examples/classlink_saml` | `CL_SUBDOMAIN` | ❌ |
+| **ClassLink (OIDC)** | OpenID Connect – `coreos/go-oidc` | `examples/classlink_oidc` | `CL_SUBDOMAIN`  `CL_OIDC_CLIENT_ID`  `CL_OIDC_CLIENT_SECRET` | ✅ |
+| **Clever** | OAuth 2.0 – Clever REST | `examples/clever` | `CLEVER_CLIENT_ID`  `CLEVER_CLIENT_SECRET` | ✅ |
+
+#### Legend
+
+- CL_SUBDOMAIN Tenant sub-domain, e.g. mydistrict.
+- SESSION_HASH_KEY 64-byte hex string that signs the session cookie (only needed for the rows marked ✅).
+- "Uses SESSION_HASH_KEY?" column clarifies which flows rely on auth.Session.
+
+
+## All authentication options
+
+### Supported authentication options
+
+| Auth method            | Protocol / Library                             | Example path\*                   | Required env vars | Uses `SESSION_HASH_KEY`? |
+|------------------------|-----------------------------------------------|----------------------------------|-------------------|--------------------------|
+| **ClassLink (SAML)**   | SAML 2.0 — `crewjam/saml/samlsp`              | `examples/classlink_saml`        | `CL_SUBDOMAIN` | ❌ |
+| **ClassLink (OIDC)**   | OpenID Connect — `coreos/go-oidc`             | `examples/classlink_oidc`        | `CL_SUBDOMAIN`, `CL_OIDC_CLIENT_ID`, `CL_OIDC_CLIENT_SECRET` | ✅ |
+| **Clever**             | OAuth 2.0 — Clever REST                       | `examples/clever`                | `CLEVER_CLIENT_ID`, `CLEVER_CLIENT_SECRET` | ✅ |
+| **Google Login**       | OpenID Connect — `golang.org/x/oauth2` + Google endpoints | **_example coming soon_** | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | ✅ |
+| **GitHub OAuth**       | OAuth 2.0 — `golang.org/x/oauth2` + GitHub endpoints | **_example coming soon_** | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | ✅ |
+
+\* _Example paths refer to runnable demo programs under the `examples/`
+directory. "Coming soon" rows have the provider helper implemented but don’t
+yet have a runnable sample._
+
+Rows marked ✅ rely on auth.Session; generate a secure key:
+
+```bash
+openssl rand -hex 64 > HASH_KEY
+export SESSION_HASH_KEY=$(cat HASH_KEY)
+```
+
+
 © 2025 Dale Musser & contributors. MIT License.
 
