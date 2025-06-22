@@ -1,3 +1,4 @@
+// server/server.go
 package server
 
 import (
@@ -20,10 +21,14 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
+/* ---------------------------------------------------------------------- */
+/*                             Construction                               */
+/* ---------------------------------------------------------------------- */
+
 // New returns a *http.Server* pre-configured for
-//   - static-cert TLS   (highest precedence)
-//   - Let’s Encrypt TLS (if enabled)
-//   - plain HTTP        (fallback).
+//  1. static-cert TLS   (highest precedence)
+//  2. Let’s Encrypt TLS (if enabled)
+//  3. plain HTTP        (fallback).
 func New(cfg config.Base, routes chi.Router) *http.Server {
 	// default middleware stack
 	r := chi.NewRouter()
@@ -41,9 +46,7 @@ func New(cfg config.Base, routes chi.Router) *http.Server {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	/* ------------------------------------------------------------------ */
-	/*                      1 — Static certificate?                        */
-	/* ------------------------------------------------------------------ */
+	/* ---------- 1 — Static certificate? ---------- */
 	if cfg.CertFile != "" && cfg.KeyFile != "" {
 		cert, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
 		if err != nil {
@@ -59,9 +62,7 @@ func New(cfg config.Base, routes chi.Router) *http.Server {
 		}
 	}
 
-	/* ------------------------------------------------------------------ */
-	/*                      2 — Let’s Encrypt autocert                     */
-	/* ------------------------------------------------------------------ */
+	/* ---------- 2 — Let’s Encrypt autocert ---------- */
 	if cfg.EnableTLS && cfg.Domain != "" {
 		m := &autocert.Manager{
 			Cache:      autocert.DirCache(".cert-cache"),
@@ -81,7 +82,7 @@ func New(cfg config.Base, routes chi.Router) *http.Server {
 }
 
 /* ---------------------------------------------------------------------- */
-/*            Graceful shutdown (unchanged) + Serve helper                */
+/*                Graceful shutdown + Serve helper                        */
 /* ---------------------------------------------------------------------- */
 
 // Graceful blocks until ctx.Done() or SIGINT/SIGTERM, then shuts the server.
@@ -99,9 +100,14 @@ func Graceful(ctx context.Context, srv *http.Server) error {
 	return srv.Shutdown(c)
 }
 
-// Serve starts the server in the appropriate mode (plain, static-TLS, autocert)
-// and then delegates to Graceful to await shutdown.
+// Serve starts the server (plain, static-TLS, or autocert) and logs
+// a ready message, then waits for graceful shutdown.
 func Serve(ctx context.Context, srv *http.Server, certFile, keyFile string) error {
+	// ----- log ready (helps during dev & prod) -----
+	tlsEnabled := (certFile != "" && keyFile != "") || srv.TLSConfig != nil
+	logger.Instance().Info("listening", "addr", srv.Addr, "tls", tlsEnabled)
+
+	// ----- run the server in background ------------
 	go func() {
 		var err error
 		switch {
@@ -116,6 +122,8 @@ func Serve(ctx context.Context, srv *http.Server, certFile, keyFile string) erro
 			logger.Instance().Error("server error", "err", err)
 		}
 	}()
+
+	// ----- block until ctx cancelled or SIGINT/SIGTERM -----
 	return Graceful(ctx, srv)
 }
 
