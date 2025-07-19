@@ -71,7 +71,7 @@ func Render(w http.ResponseWriter, r *http.Request, name string, data any) {
 	}
 
 	if err != nil {
-		logger.Instance().Error("render", "template", name, "err", err)
+		logger.Error("render", "template", name, "err", err)
 		http.Error(w, fmt.Sprintf("template error: %v", err), http.StatusInternalServerError)
 	}
 }

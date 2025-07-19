@@ -49,7 +49,7 @@ func (c *Consumer) loop(ctx context.Context) error {
 		msgs, err := sub.Fetch(c.pullSize, nats.Context(ctx))
 		if err != nil && err != nats.ErrTimeout {
 			// network hiccup or stream error – log and continue
-			logger.Instance().Error("nats fetch", "err", err)
+			logger.Error("nats fetch", "err", err)
 			continue
 		}
 		if ctx.Err() != nil {
@@ -65,7 +65,7 @@ func (c *Consumer) loop(ctx context.Context) error {
 
 			if err := c.handler(ctx, &job); err != nil {
 				_ = msg.Nak() // retry later
-				logger.Instance().Warn("nats job failed", "err", err, "id", job.ID)
+				logger.Warn("nats job failed", "err", err, "id", job.ID)
 			} else {
 				_ = msg.Ack() // success
 			}

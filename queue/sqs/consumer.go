@@ -40,7 +40,9 @@ func (c *Consumer) loop(ctx context.Context) error {
 			WaitTimeSeconds:     20,
 		})
 		if err != nil || len(out.Messages) == 0 {
-			if ctx.Err() != nil { return ctx.Err() }
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			continue
 		}
 		for _, msg := range out.Messages {
@@ -49,7 +51,7 @@ func (c *Consumer) loop(ctx context.Context) error {
 				Data: []byte(*msg.Body),
 			}
 			if err := c.handler(ctx, &job); err != nil {
-				logger.Instance().Error("sqs job error", "err", err, "id", job.ID)
+				logger.Error("sqs job error", "err", err, "id", job.ID)
 				// let it retry automatically
 				continue
 			}

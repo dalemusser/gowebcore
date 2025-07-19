@@ -44,7 +44,7 @@ var workerCmd = &cobra.Command{
 					return ctx.Err()
 				case <-ticker.C:
 					if err := purgeCache(ctx); err != nil {
-						logger.Instance().Error("purge cache", "err", err)
+						logger.Error("purge cache", "err", err)
 					}
 				}
 			}

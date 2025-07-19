@@ -54,7 +54,7 @@ func (c *Consumer) run(ctx context.Context) error {
 					Data:   []byte(data),
 				}
 				if err := c.handler(ctx, &job); err != nil {
-					logger.Instance().Error("job error", "err", err, "id", job.ID)
+					logger.Error("job error", "err", err, "id", job.ID)
 					// leave pending for retry
 					continue
 				}

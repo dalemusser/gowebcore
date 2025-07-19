@@ -36,7 +36,7 @@ func New(cfg config.Base, routes chi.Router) *http.Server {
 	r.Use(middleware.Recoverer, middleware.Compress(5))
 	r.Use(logger.ChiLogger)
 
-	// mount caller routes + health
+	// mount caller routes + health endpoint
 	r.Mount("/", routes)
 	r.Get("/health", DefaultHealthHandler)
 
@@ -50,7 +50,7 @@ func New(cfg config.Base, routes chi.Router) *http.Server {
 	if cfg.CertFile != "" && cfg.KeyFile != "" {
 		cert, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
 		if err != nil {
-			logger.Instance().Error("TLS cert load failed", "err", err)
+			logger.Error("TLS cert load failed", "err", err)
 		} else {
 			srv.Addr = net.JoinHostPort("", pickPort(cfg.HTTPSPort, 8443))
 			srv.TLSConfig = &tls.Config{
@@ -94,7 +94,8 @@ func Graceful(ctx context.Context, srv *http.Server) error {
 	case <-ctx.Done():
 	case <-stop:
 	}
-	logger.Instance().Info("shutting down")
+	logger.Info("shutting down")
+
 	c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	return srv.Shutdown(c)
@@ -105,7 +106,7 @@ func Graceful(ctx context.Context, srv *http.Server) error {
 func Serve(ctx context.Context, srv *http.Server, certFile, keyFile string) error {
 	// ----- log ready (helps during dev & prod) -----
 	tlsEnabled := (certFile != "" && keyFile != "") || srv.TLSConfig != nil
-	logger.Instance().Info("listening", "addr", srv.Addr, "tls", tlsEnabled)
+	logger.Info("listening", "addr", srv.Addr, "tls", tlsEnabled)
 
 	// ----- run the server in background ------------
 	go func() {
@@ -119,7 +120,7 @@ func Serve(ctx context.Context, srv *http.Server, certFile, keyFile string) erro
 			err = srv.ListenAndServe()
 		}
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Instance().Error("server error", "err", err)
+			logger.Error("server error", "err", err)
 		}
 	}()
 

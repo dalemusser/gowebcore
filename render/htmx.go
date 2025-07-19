@@ -24,14 +24,14 @@ func Page(w http.ResponseWriter, r *http.Request, child string, data any) {
 	// injects the child’s {{ block "title" }}, {{ block "content" }}, etc.
 	// into base.html and returns the complete HTML page.
 	if err := tpl.ExecuteTemplate(w, child, data); err != nil {
-		logger.Instance().Error("render page", "err", err)
+		logger.Error("render page", "err", err)
 	}
 }
 
 // Fragment renders a single template without layout.
 func Fragment(w http.ResponseWriter, r *http.Request, name string, data any) {
 	if err := tpl.ExecuteTemplate(w, name, data); err != nil {
-		logger.Instance().Error("render fragment", "err", err)
+		logger.Error("render fragment", "err", err)
 	}
 }
 

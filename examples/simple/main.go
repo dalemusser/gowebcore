@@ -7,8 +7,8 @@ import (
 
 	"github.com/dalemusser/gowebcore/config"
 	"github.com/dalemusser/gowebcore/logger"
-	"github.com/dalemusser/gowebcore/tasks"
 	"github.com/dalemusser/gowebcore/server"
+	"github.com/dalemusser/gowebcore/tasks"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -36,10 +36,10 @@ func main() {
 		if err := server.Graceful(ctx, srv); err != nil {
 			log.Println(err)
 		}
-		cancel()      // stop tasks when server exits
+		cancel() // stop tasks when server exits
 	}()
 
-	mgr.Wait()      // block until tasks finish
+	mgr.Wait() // block until tasks finish
 }
 
 func tickerTask(ctx context.Context) error {
@@ -49,7 +49,7 @@ func tickerTask(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-t.C:
-			logger.Instance().Info("tick")
+			logger.Info("tick")
 		}
 	}
 }
