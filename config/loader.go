@@ -1,3 +1,4 @@
+// gowebcore/config/loader.go
 package config
 
 import (
@@ -10,11 +11,15 @@ import (
 	"github.com/spf13/viper"
 )
 
+/*──────────────────────── internal helper ───────────────────────*/
+
 type loader struct {
 	envPrefix string
 	flagset   *pflag.FlagSet
 	cfgFile   string
 }
+
+/*──────────────────────── public entry point ────────────────────*/
 
 // Load merges flag → env → file values into the struct pointed to by dst.
 func Load(dst any, opts ...Option) error {
@@ -24,33 +29,47 @@ func Load(dst any, opts ...Option) error {
 	}
 
 	v := viper.New()
+
+	/*─── 1. Environment variables ───────────────────────────────*/
 	if l.envPrefix != "" {
 		v.SetEnvPrefix(l.envPrefix)
 	}
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 
+	// bind every mapstructure tag to an env variable
 	if err := bindEnvs(v, dst); err != nil {
 		return err
 	}
 
+	/*─── 2. Config file ─────────────────────────────────────────*/
 	if l.cfgFile != "" {
+		// caller supplied an explicit file
 		v.SetConfigFile(l.cfgFile)
-		if err := v.ReadInConfig(); err != nil && !os.IsNotExist(err) {
-			return fmt.Errorf("read config: %w", err)
-		}
+	} else {
+		// fallback: search for "config.{toml,yaml,json}" in working dir
+		v.SetConfigName("config")
+		v.AddConfigPath(".")
 	}
 
+	// Try to read; ignore "file not found" so env/flags still apply
+	if err := v.ReadInConfig(); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("read config: %w", err)
+	}
+
+	/*─── 3. Command-line flags ──────────────────────────────────*/
 	if l.flagset != nil {
 		if err := v.BindPFlags(l.flagset); err != nil {
 			return err
 		}
 	}
 
+	/*─── 4. Unmarshal into dst ─────────────────────────────────*/
 	if err := v.Unmarshal(dst); err != nil {
 		return fmt.Errorf("unmarshal: %w", err)
 	}
 
+	// optional Validate() hook
 	if v, ok := dst.(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return fmt.Errorf("config validation: %w", err)
@@ -60,7 +79,7 @@ func Load(dst any, opts ...Option) error {
 	return nil
 }
 
-// --- helpers -------------------------------------------------------------
+/*──────────────────────── helper: env binding ───────────────────*/
 
 // bindEnvs walks the struct and calls v.BindEnv for every mapstructure tag.
 func bindEnvs(v *viper.Viper, iface any, path ...string) error {
